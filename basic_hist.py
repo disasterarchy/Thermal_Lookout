@@ -98,31 +98,32 @@ def OpenUVC():
 
 
 def DoNextFrame():
-          data = q.get(True, 500)
-          if data is None:
-            print("data is none")
-          #data = cv2.resize(data[:,:], (640, 480))
-          minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
-          img = raw_to_8bit(data)
-          display_temperature(img, minVal, minLoc, (255, 0, 0))
-          display_temperature(img, maxVal, maxLoc, (0, 0, 255))
-          #cv2.imshow('Lepton Radiometry', img)
-          cv2.imwrite("test.jpg",img)
+    data = q.get(True, 500)
+    if data is None:
+                  print("data is none")
+    data = cv2.resize(data[:,:], (720, 540))
+    minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
+    img = raw_to_8bit(data)
+    display_temperature(img, minVal, minLoc, (255, 0, 0))
+    display_temperature(img, maxVal, maxLoc, (0, 0, 255))
+    cv2.imshow('Lepton Radiometry', img)
+    cv2.imwrite("test.jpg",img)
+    
+    cv2.waitKey(1)
           
-          #cv2.waitKey(1)
-          
-def GetData():
-          raw = q.get(True, 500)
-          if raw is None:
-            print("data is none")
-          data = cv2.resize(raw[:,:], (640, 480))
-          minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
-          img = raw_to_8bit(data)
-          display_temperature(img, minVal, minLoc, (255, 0, 0))
-          display_temperature(img, maxVal, maxLoc, (0, 0, 255))
-          #cv2.imshow('Lepton Radiometry', img)
-          cv2.imwrite("test.jpg",img)
-          return minVal, maxVal, raw, img 
+def GetData(bWrite):
+    raw = q.get(True, 500)
+    if raw is None:
+                  print("data is none")
+    data = cv2.resize(raw[:,:], (640, 480))
+    minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
+    img = raw_to_8bit(data)
+    display_temperature(img, minVal, minLoc, (255, 0, 0))
+    display_temperature(img, maxVal, maxLoc, (0, 0, 255))
+    #cv2.imshow('Lepton Radiometry', img)
+    if bWrite:
+		cv2.imwrite("static/current.jpg",img)
+    return minVal, maxVal, raw, img 
 
 def exit_handler():
     print("Application is terminating!")
@@ -135,36 +136,27 @@ def Run(X):
   x = 0
   while x<X:
     DoNextFrame()
-    x+=1
-        
-ctx = POINTER(uvc_context)()
-dev = POINTER(uvc_device)()
-devh = POINTER(uvc_device_handle)()
-ctrl = uvc_stream_ctrl()
-atexit.register(exit_handler)
-OpenUVC()
-
-DoNextFrame()
-mn, mx, rw, im = GetData()
+    x+=1       
 
 def MakeHistogram(rw):
-      fig = Figure()
-      FigureCanvas(fig)
-      ax = fig.add_subplot(111)
-      counts, temps = np.histogram(rw,bins=256)
-      counts = np.insert(counts, 0,0)
-      tempsF = ktof(temps)
-      #ax.plot(tempsF,counts)
-      #fig.savefig('/static/histogram')
-      #ax.clear()
-      it = np.nditer(counts, flags=['f_index'])
-      cdf = np.zeros_like(counts)
-      while not it.finished:
-        cdf[it.index]=np.sum(counts[it.index::])
-        it.iternext()
-      cdf = cdf/19200.0
-      ax.plot(tempsF,cdf)
-      fig.savefig('\static\cdf')
+		fig = Figure()
+		FigureCanvas(fig)
+		ax = fig.add_subplot(111)
+		counts, temps = np.histogram(rw,bins=256)
+		counts = np.insert(counts, 0,0)
+		tempsF = ktof(temps)
+		ax.plot(tempsF,counts)
+		fig.savefig('static/histogram')
+		ax.clear()
+		it = np.nditer(counts, flags=['f_index'])
+		cdf = np.zeros_like(counts)
+		while not it.finished:
+		  cdf[it.index]=np.sum(counts[it.index::])
+		  it.iternext()
+		cdf = cdf/19200.0
+		ax.plot(tempsF,cdf)
+		fig.savefig('static/cdf')
+		return tempsF, cdf
 
 
 def HistLoop(tT,tPct):
@@ -173,20 +165,35 @@ def HistLoop(tT,tPct):
     ax = fig.add_subplot(111)
 
     while True:
-      mn, mx, rw, im = GetData()
-      cv2.imwrite("current.jpg",im)
-      counts, temps = np.histogram(rw,bins=256)
-      counts = np.insert(counts, 0,0)
-      tempsF = ktof(temps)
-      ax.plot(tempsF,counts)
-      fig.savefig('histogram')
-      ax.clear()
-      it = np.nditer(counts, flags=['f_index'])
-      cdf = np.zeros_like(counts)
-      while not it.finished:
-        cdf[it.index]=np.sum(counts[it.index::])
-        it.iternext()
-      cdf = cdf/19200.0
-      ax.plot(tempsF,cdf)
-      fig.savefig('cdf')
+      try:
+        mn, mx, rw, im = GetData()
+        cv2.imwrite("static/current.jpg",im)
+        counts, temps = np.histogram(rw,bins=256)
+        counts = np.insert(counts, 0,0)
+        tempsF = ktof(temps)
+        ax.plot(tempsF,counts)
+        fig.savefig('static/histogram')
+        ax.clear()
+        it = np.nditer(counts, flags=['f_index'])
+        cdf = np.zeros_like(counts)
+        while not it.finished:
+          cdf[it.index]=np.sum(counts[it.index::])
+          it.iternext()
+        cdf = cdf/19200.0
+        ax.plot(tempsF,cdf)
+        fig.savefig('static/cdf')
+        idx = np.abs(tempsF-tT).argmin()
+        PctExceeded = cdf[idx]
+        print(PctExceeded*100, "% exceeds ", tT)
+      except:
+        print("error")
       
+ctx = POINTER(uvc_context)()
+dev = POINTER(uvc_device)()
+devh = POINTER(uvc_device_handle)()
+ctrl = uvc_stream_ctrl()
+atexit.register(exit_handler)
+OpenUVC()
+
+#DoNextFrame()
+#mn, mx, rw, im = GetData()
