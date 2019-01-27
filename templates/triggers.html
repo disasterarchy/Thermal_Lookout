@@ -1,0 +1,113 @@
+<html>
+<script>
+window.onload = function() {
+    var image = document.getElementById("img");
+
+    function updateImage() {
+        image.src = image.src.split("?")[0] + "?" + new Date().getTime();
+    }
+
+    setInterval(updateImage, 1000);
+}
+</script>
+<body>
+<h1>Current Image</h1>
+<img id="img" src="/data/current.jpg">
+<h1>Triggers</h1>
+<h4>Quick Add Triggers</h4>
+<table>
+<tbody>
+<tr>
+<td><form action="/update?{{ url }}"
+                    enctype="multipart/form-data"
+                    method="post">
+ <input name="triggerName" type="hidden" value="fire_detected" /> 
+ <input name="minTemp" type="hidden" value="150" /> 
+ <input name="maxTemp"  type="hidden" value ="800"   /> 
+ <input name="imgPercent"  type="hidden" value="0.05"/> 
+ <input name="onDelay" type="hidden"   value="3" /> 
+ <input name="offDelay" type="hidden"  value="40"  /> 
+ <input name="repeatDelay" type="hidden" value="3600"/> 
+ <input type="submit" name="submit" value="New Fire Trigger"></form></td>
+<td> <form action="/update?{{ url }}"
+                    enctype="multipart/form-data"
+                    method="post">
+ <input name="triggerName" type="hidden" value="person_detected"/> 
+ <input name="minTemp" type="hidden" value="85" /> 
+ <input name="maxTemp"  type="hidden" value ="94"   /> 
+ <input name="imgPercent"  type="hidden" value="0.05"/> 
+ <input name="onDelay" type="hidden"   value="1" /> 
+ <input name="offDelay" type="hidden"  value="4"  /> 
+ <input name="repeatDelay" type="hidden" value="0"/> 
+ <input type="submit" name="submit" value="Body Heat Trigger"></form></td>
+</tr>
+</tbody>
+</table>
+<h4>My Triggers</h4>
+<table>
+<tbody>
+<tr>
+<td>
+Trigger<br>
+Name
+</td>
+<td>
+Min<br>
+Temp
+</td>
+<td>
+Max<br>
+Temp
+</td>
+<td>
+Image<br>
+Percent
+</td>
+<td>
+On<br>
+Delay
+</td>
+<td>
+Off<br>
+Delay
+</td>
+<td>
+Repeat<br>
+Delay
+</td>
+<td>
+
+</td>
+</tr>
+{% for trigger in triggers %}
+<tr>
+<form action="/update?{{ url }}"
+                    enctype="multipart/form-data"
+                    method="post">
+<td><input name="triggerName" size="14" type="text" value="{{ trigger['name'] }}" /></td>
+<td><input name="minTemp" type="number" min="0" max="799" step="1" size="3" value="{{trigger['minTemp']}}"/></td>
+<td><input name="maxTemp"  type="number" min="0" max="800" step="1" value="{{trigger['maxTemp']}}" /></td>
+<td><input name="imgPercent"  type="text" size="4" value="{{trigger['pct']}}"/></td>
+<td><input name="onDelay" type="number" min="0" max="100" step="1" value="{{trigger['delayOn']}}"/></td>
+<td><input name="offDelay" type="number" min="0" max="100" step="1" value="{{trigger['delayOff']}}" /></td>
+<td><input name="repeatDelay" type="number" min="0"  step="1" value="{{trigger['delayRepeat']}}" size="3"/></td>
+<td><input name = "key" type="hidden" value = {{trigger['key']}}><input type="submit" name ="submit" value="Save"><input type="submit" name="submit" value="Delete"></form></td>             
+</tr>
+{% endfor %}
+<tr>
+<form action="/update?{{ url }}"
+                    enctype="multipart/form-data"
+                    method="post">
+<td><input name="triggerName" size="14" type="text" /></td>
+<td><input name="minTemp" type="number" min="0" max="799" step="1" size="3"/></td>
+<td><input name="maxTemp"  type="number" min="0" max="800" step="1" /></td>
+<td><input name="imgPercent"  type="text" size="4" /></td>
+<td><input name="onDelay" type="number" min="0" max="100" step="1" /></td>
+<td><input name="ofstatic/current.htmlfDelay" type="number" min="0" max="100" step="1" /></td>
+<td><input name="repeatDelay" type="number" min="0"  step="1" value="2" size="3"/></td>
+<td><input type="submit" name="submit" value="Add"></form></td>             
+</tr>
+</tbody>
+</table>
+</body>
+</html>

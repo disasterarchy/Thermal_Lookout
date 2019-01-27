@@ -75,6 +75,7 @@ def MainLoop ():
     triggers = {}
     while True:
         #try:
+            s1=datetime.now()
             mn, mx, rw = GetDataFast(False)
             tempsF, cdf = MakeHistogramFast(rw)
             tval=0
@@ -103,26 +104,30 @@ def MainLoop ():
                             print "TRIGGER ",t['name'], PctInRange*100, "% is in range exceeds ", t['minTempF'], ' - ', t['maxTempF']
                 else:
                     #Temperatures not in Range
-                    print(PctInRange*100, "% in range ", t['minTempF'], '-', t['maxTempF'])
+                    #print(PctInRange*100, "% in range ", t['minTempF'], '-', t['maxTempF'])
                     t['nOn'] = 0
                     t['nOff'] += 1
                     if t['nOff'] == t['delayOff']:
                         Triggered(t, PctInRange, mn, mx, False)
                         print("NULL TRIGGER", t['name'])
                 #print(t['name'], ' ', PctInRange*100, ' ', t['minTempF'], '-', t['maxTempF'], ' ', t['nOn'])
-                print t['name'], '%.1f' % t['pct'], t['nOn'], t['nOff'], t['nRepeat']
+                #print t['name'], '%.1f' % t['pct'], t['nOn'], t['nOff'], t['nRepeat']
                 activet =  t['name']
                 t['nRepeat']+=1
             try:
                 t=triggers[activet]
             except:
                 t= {'minTempF':0, 'maxTempF':800, 'pctInRange':100, 'nOn':0}
-            s=datetime.now()
+            s2=datetime.now()
             im = MakeItPretty(rw, t, mn, mx)
+            s3=datetime.now()
             o = CloudSync(ktof(mn),ktof(mx),im, key,'')
-            print "Regular Image: ", datetime.now()-s
             triggers = UpdateTriggers(o, triggers)
-                
+            s4=datetime.now()
+            td1=s2-s1
+            td2=s3-s2
+            td3=s4-s3
+            print(td1.total_seconds(),td2.total_seconds(),td3.total_seconds())   
                         
         #except:
             #print('error')

@@ -131,7 +131,7 @@ def DoNextFrame():
     
     cv2.waitKey(1)
           
-def GetData(bWrite):
+def GetData(bWrite=False):
     raw = q.get(True, 500)
     if raw is None:
                   print("data is none")
