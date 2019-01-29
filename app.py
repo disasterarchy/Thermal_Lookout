@@ -1,42 +1,56 @@
+from config import UnitsC, f_triggers
 import requests
 import threading
 import time
+from T_Loop import *
 from flask import Flask
-from local_thermal_loop import *
-from flask import render_template
-from flask import request, redirect, url_for
+from flask import render_template, Response, request, redirect, url_for
+#from camera_pi import Camera
 
 app = Flask(__name__)
 
-@app.before_first_request
-def activate_job():
+#@app.before_first_request
+#def activate_job():
     #def run_job():
     #    while True:
     #        print("Run recurring task")
     #        time.sleep(3)
     
-    thread = threading.Thread(target=MainLoop)
-    thread.start()
+##    thread = threading.Thread(target=MainLoop)
+##    thread.start()
 
 @app.route("/")
 def hello():
     return "Hello World!"
 
-@app.route('/data/current.jpg')
-def CurrentImage():
-        #try:
-            imm = q2.get(True, 0.5)
-            print "Retrieved from q2"
-        except:
-            print "q didn't work!"
-            imm = cv2.imread("test.jpg")
-        #mn, mx, rw, imm = GetData()
-        #basic_hist.MakeHistogram(rw)
-        #imm = LoopActions(True)
-        buf = cv2.imencode(".jpg",imm)
-        resp = Flask.make_response(app, buf[1].tostring())
-        resp.content_type = "image/jpeg"
-	return resp
+def gen(camera):
+    """Video streaming generator function."""
+    while True:
+        frame = camera.get_frame()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    """Video streaming route. Put this in the src attribute of an img tag."""
+    return Response(gen(Camera()),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+##@app.route('/data/current.jpg')
+##def CurrentImage():
+##        try:
+##            imm = q2.get(True, 0.5)
+##            print "Retrieved from q2"
+##        except:
+##            print "q didn't work!"
+##            imm = cv2.imread("test.jpg")
+##        #mn, mx, rw, imm = GetData()
+##        #basic_hist.MakeHistogram(rw)
+##        #imm = LoopActions(True)
+##        buf = cv2.imencode(".jpg",imm)
+##        resp = Flask.make_response(app, buf[1].tostring())
+##        resp.content_type = "image/jpeg"
+##	return resp
 
 @app.route('/triggers')
 def triggers():
@@ -53,7 +67,7 @@ def trgs():
 
 @app.route('/status')
 def status(name=None):
-    return render_template('status.html', name="TL")
+    return render_template('status.html')
 
 @app.route('/update', methods=['POST','GET'])
 def update():
@@ -64,7 +78,7 @@ def update():
         print rf['triggerName']
         del trs[rf['triggerName']]
         #TODO add delete code
-        
+      
     #if action == "Save":
     #    trs[rf['name']]['name'] = rf['name']
     #    trs[rf['name']]['minTemp'] = rf['minTemp']
@@ -101,25 +115,25 @@ def update():
         
     return redirect(url_for('triggers'))
         
-def start_runner():
-    def start_loop():
-        not_started = True
-        while not_started:
-            print('In start loop')
-            try:
-                r = requests.get('http://127.0.0.1:5000/')
-                if r.status_code == 200:
-                    print('Server started, quiting start_loop')
-                    not_started = False
-                print(r.status_code)
-            except:
-                print('Server not yet started')
-            time.sleep(2)
-
-    print('Started runner')
-    thread = threading.Thread(target=start_loop)
-    thread.start()
+##def start_runner():
+##    def start_loop():
+##        not_started = True
+##        while not_started:
+##            print('In start loop')
+##            try:
+##                r = requests.get('http://127.0.0.1:5000/')
+##                if r.status_code == 200:
+##                    print('Server started, quiting start_loop')
+##                    not_started = False
+##                print(r.status_code)
+##            except:
+##                print('Server not yet started')
+##            time.sleep(2)
+##
+##    print('Started runner')
+##    thread = threading.Thread(target=start_loop)
+##    thread.start()
 
 if __name__ == "__main__":
-    start_runner()
-    app.run()
+##    start_runner()
+    app.run(host='0.0.0.0', threaded=True)

@@ -1,21 +1,14 @@
+from config import UnitsC, f_triggers, web_url, upload_url, key, your_token, your_domain, img_url, key
 from local_basic_hist import *
 import time
 import numpy as np
 import json
 import urllib2
 import requests
+from base_camera import BaseCamera
 
 
-f_triggers = open('triggers.csv','r')
-web_url = 'https://maker.ifttt.com/trigger/{event}/with/key/cxREu7pLkejEkwtCRKMfiA'
-dns_url = 'https://duckdns.org/update/{YOURDOMAIN}/{YOURTOKEN}/'
-upload_url = 'https://thermal-lookout.appspot.com/upload'
-key = "ahFzfnRoZXJtYWwtbG9va291dHI6CxIHTG9va291dCIWZGVmYXVsdF90aGVybWFsTG9va291dAwLEgpTYXZlZEltYWdlGICAgICA8ogKDA"
-your_token = '481eb920-6df8-4ebd-aa63-8d64198833a9'
-your_domain = 'thermal-lookout'
-img_url = "https://thermal-lookout.appspot.com/img?img_id="
 
-key = "ahFzfnRoZXJtYWwtbG9va291dHI6CxIHTG9va291dCIWZGVmYXVsdF90aGVybWFsTG9va291dAwLEgpTYXZlZEltYWdlGICAgICg55gKDA"
 bWriteImages = True
 bSaveVideo = True
 
@@ -72,10 +65,6 @@ def UpdateTriggers(out, triggers):
     return newtriggers
    
 def MainLoop ():
-    tcsv = open('triggers.csv','r')
-    o = tcsv.readlines()
-    tcsv.close()
-    trs = UpdateTriggers(o, {})
     while True:
         LoopActions
         
@@ -128,7 +117,7 @@ def LoopActions (retImg=False):
             except:
                 t= {'minTemp':0, 'maxTemp':800, 'pctInRange':100, 'nOn':0}
             s2=datetime.now()
-            img = MakeItPretty(rw, t, mn, mx)
+            img = MakeItPretty2(rw, t, mn, mx)
             #try:
             #    q2.put(im,True,0.5)
             #except:
@@ -139,6 +128,8 @@ def LoopActions (retImg=False):
             td1=s2-s1
             td2=s3-s2
             td3=s4-s3
+            tdd = s4-s1
+            print 1.0/tdd.total_seconds()
             #print(td1.total_seconds(),td2.total_seconds(),td3.total_seconds())   
             if retImg:
                 return img
@@ -163,7 +154,10 @@ def CloudSync(mn, mx, im, k, ReturnURL):
         rout = requests.post(upload_url, data=data, files=files)
         return rout
 
-
+tcsv = open('triggers.csv','r')
+o = tcsv.readlines()
+tcsv.close()
+trs = UpdateTriggers(o, {})
 
 #t = {'minTempF':85, 'maxTempF':95}
 #mn, mx, rw, immm = GetData(False)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+from config import *
 from uvctypes import *
 import time
 import cv2
@@ -16,7 +16,6 @@ from datetime import datetime
 #from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 #from matplotlib.figure import Figure
 
-#import picamera
 import time
 import io
 
@@ -32,7 +31,7 @@ rawCapture = PiRGBArray(camera)
 
 BUF_SIZE = 2
 q = Queue(BUF_SIZE)
-q2= Queue(BUF_SIZE)
+
 
 binsF = np.arange(0,200,1)
 
@@ -74,8 +73,13 @@ def raw_to_8bit(data):
   return cv2.cvtColor(np.uint8(data), cv2.COLOR_GRAY2RGB)
 
 def display_temperature(img, val_k, loc, color):
-  val = ktof(val_k)
-  cv2.putText(img,"{0:.1f} F".format(val), loc, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
+  
+  if unitsC:
+      val = ktoc(val_k)
+      cv2.putText(img,"{0:.1f} C".format(val), loc, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
+  else:
+      val = ktof(val_k)
+      cv2.putText(img,"{0:.1f} F".format(val), loc, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
   x, y = loc
   cv2.line(img, (x - 2, y), (x + 2, y), color, 1)
   cv2.line(img, (x, y - 2), (x, y + 2), color, 1)
@@ -125,8 +129,8 @@ def DoNextFrame():
     data = cv2.resize(data[:,:], (720, 540))
     minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
     img = raw_to_8bit(data)
-    display_temperature(img, minVal, minLoc, (255, 0, 0))
-    display_temperature(img, maxVal, maxLoc, (0, 0, 255))
+    display_temperature(img, minVal, minLoc, (255, 60, 60))
+    display_temperature(img, maxVal, maxLoc, (80, 80, 255))
     cv2.imshow('Lepton Radiometry', img)
     cv2.imwrite("test.jpg",img)
     
@@ -139,14 +143,14 @@ def GetData(bWrite=False):
     data = cv2.resize(raw[:,:], (640, 480))
     minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(data)
     img = raw_to_8bit(data)
-    display_temperature(img, minVal, minLoc, (255, 0, 0))
-    display_temperature(img, maxVal, maxLoc, (0, 0, 255))
+    display_temperature(img, minVal, minLoc, (255, 60, 60))
+    display_temperature(img, maxVal, maxLoc, (80, 80, 255))
     #cv2.imshow('Lepton Radiometry', img)
     if bWrite:
       cv2.imwrite("static/current.jpg",img)
     return minVal, maxVal, raw, img
 
-def GetDataFast(bWrite):
+def GetDataFast(bWrite=False):
     raw = q.get(True, 500)
     if raw is None:
                   print("data is none")
@@ -167,45 +171,26 @@ def Run(X):
     DoNextFrame()
     x+=1       
 
-def MakeHistogram(rw):
-    fig = Figure()
-    FigureCanvas(fig)
-    ax = fig.add_subplot(111)
-    bins = np.concatenate((np.arange(-10,15,1),np.arange(16,35,0.4),np.arange(35,105,1),np.arange(105,150,2)))
-    bins = (bins+273.15)*100
-    counts, temps = np.histogram(rw,bins=bins)
-    counts = np.insert(counts, 0,0)
-    tempsF = ktof(temps)
-    ax.plot(tempsF,counts)
-    fig.savefig('static/histogram')
-    ax.clear()
-    it = np.nditer(counts, flags=['f_index'])
-    cdf = np.zeros_like(counts)
-    while not it.finished:
-      cdf[it.index]=np.sum(counts[it.index::])
-      it.iternext()
-    cdf = cdf/19200.0
-    ax.plot(tempsF,cdf)
-    fig.savefig('static/cdf')
-    return tempsF, cdf
-
 def MakeHistogramFast(rw):
-    bins = np.concatenate((np.arange(-10,15,1),np.arange(16,35,0.4),np.arange(35,105,1),np.arange(105,150,2)))
+    bins = np.concatenate((np.arange(-10,15,1),np.arange(16,35,0.4),np.arange(35,105,1),np.arange(105,400,2)))
     bins = (bins+273.15)*100
     counts, temps = np.histogram(rw,bins=bins)
     counts = np.insert(counts, 0,0)
-    tempsF = ktof(temps)
+    if UnitsC:
+      temps = ktoc(temps)
+    else:
+      temps = ktof(temps)
     it = np.nditer(counts, flags=['f_index'])
     cdf = np.zeros_like(counts)
     while not it.finished:
       cdf[it.index]=np.sum(counts[it.index::])
       it.iternext()
     cdf = cdf/19200.0
-    return tempsF, cdf
+    return temps, cdf
 
 def MakeItPretty(rw, t, mn, mx):
-  lowerB = ftok(t['minTempF'])
-  upperB = ftok(t['maxTempF'])
+  lowerB = ftok(t['minTemp'])
+  upperB = ftok(t['maxTemp'])
   rw = cv2.flip(rw,1)
   mask = cv2.inRange(rw,lowerB, upperB)
   #cv2.imwrite('mask.jpg', mask)
@@ -227,7 +212,7 @@ def MakeItPretty(rw, t, mn, mx):
   img = cv2.copyMakeBorder(img2,top=30, bottom=100, left=30, right=30, borderType=0)
   mnLoc = (minLoc[0]+0,minLoc[1]+0)
   mxLoc = (maxLoc[0]+0,maxLoc[1]+0)
-  display_temperature(img, mn, minLoc, (255, 0, 0))
+  display_temperature(img, mn, minLoc, (255, 60, 60))
   display_temperature(img, mx, maxLoc, (140, 140, 255))
   color = (255,255,255)
   if t['nOn']>=1:
@@ -235,7 +220,10 @@ def MakeItPretty(rw, t, mn, mx):
   else:
     TextInfo = ""
   cv2.putText(img, TextInfo, (10,10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
-  TextInfo = '%.2f percent is in range %.0f F to %.0f F' % (t['pctInRange'], t['minTempF'], t['maxTempF'])
+  if UnitsC:
+    TextInfo = '%.2f percent is in range %.0f F to %.0f F' % (t['pctInRange'], t['minTemp'], t['maxTemp'])
+  else:
+    TextInfo = '%.2f percent is in range %.0f C to %.0f C' % (t['pctInRange'], t['minTemp'], t['maxTemp'])
   cv2.putText(img, TextInfo, (20,500), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
   TextInfo = datetime.now().__format__("%m-%d-%Y %H:%M:%S") 
   cv2.putText(img, TextInfo, (10,540), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
@@ -245,8 +233,8 @@ def MakeItPretty(rw, t, mn, mx):
 def MakeItPretty2(rw, t, mn, mx):
   rawCapture = PiRGBArray(camera)
   
-  lowerB = ftok(t['minTempF'])
-  upperB = ftok(t['maxTempF'])
+  lowerB = ftok(t['minTemp'])
+  upperB = ftok(t['maxTemp'])
   rw = cv2.flip(rw,1)
   mask = cv2.inRange(rw,lowerB, upperB)
   #cv2.imwrite('mask.jpg', mask)
@@ -276,7 +264,10 @@ def MakeItPretty2(rw, t, mn, mx):
   else:
     TextInfo = ""
   cv2.putText(img, TextInfo, (10,520), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
-  TextInfo = '%.2f percent is in \n range %.0f F to %.0f F' % (t['pctInRange'], t['minTempF'], t['maxTempF'])
+  if UnitsC:
+    TextInfo = '%.2f percent is in range %.0f F to %.0f F' % (t['pctInRange'], t['minTemp'], t['maxTemp'])
+  else:
+    TextInfo = '%.2f percent is in range %.0f C to %.0f C' % (t['pctInRange'], t['minTemp'], t['maxTemp'])
   cv2.putText(img, TextInfo, (10,560), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
   TextInfo = datetime.now().__format__("%m-%d-%Y %H:%M:%S") 
   cv2.putText(img, TextInfo, (10,540), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)

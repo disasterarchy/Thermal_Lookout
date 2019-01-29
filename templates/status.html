@@ -1,21 +1,9 @@
 <html>
-<script>
-window.onload = function() {
-    var image = document.getElementById("img");
-
-    function updateImage() {
-        image.src = image.src.split("?")[0] + "?" + new Date().getTime();
-    }
-
-    setInterval(updateImage, 1000);
-}
-</script>
 <body>
 Hello
 {{ name }}
-<img id="img" src="http://127.0.0.1:5000/data/current.jpg" style="position:absolute;top:0;left:0;height:100%;width:100%"/>
-
-<img src=http://127.0.0.1:5000/data/current.jpg">
+<img src="{{ url_for('video_feed') }}">
+style="position:absolute;top:0;left:0;height:100%;width:100%"/>
 </body>
 </html>
 
