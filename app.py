@@ -5,6 +5,7 @@ import time
 from T_Loop import *
 from flask import Flask
 from flask import render_template, Response, request, redirect, url_for
+
 #from camera_pi import Camera
 
 app = Flask(__name__)
@@ -36,27 +37,20 @@ def video_feed():
     return Response(gen(Camera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-##@app.route('/data/current.jpg')
-##def CurrentImage():
-##        try:
-##            imm = q2.get(True, 0.5)
-##            print "Retrieved from q2"
-##        except:
-##            print "q didn't work!"
-##            imm = cv2.imread("test.jpg")
-##        #mn, mx, rw, imm = GetData()
-##        #basic_hist.MakeHistogram(rw)
-##        #imm = LoopActions(True)
-##        buf = cv2.imencode(".jpg",imm)
-##        resp = Flask.make_response(app, buf[1].tostring())
-##        resp.content_type = "image/jpeg"
-##	return resp
+
+@app.route('/data/current.jpg')
+def CurrentImage():
+        imm = cv2.imread("test.jpg")
+        mn, mx, rw, imm = GetData()
+        buf = cv2.imencode(".jpg",imm)
+        resp = Flask.make_response(app, buf[1].tostring())
+        resp.content_type = "image/jpeg"
+	return resp
 
 @app.route('/triggers')
 def triggers():
-    tcsv = open('triggers.csv','r')
-    o = tcsv.readlines()
-    Triggers = UpdateTriggers(o, {})
+    with open('trs.pickle', 'rb') as handle:
+        trs=  pickle.load(handle)
     return render_template('triggers.html', triggers=trs.values(), url='me')
 
 
@@ -73,6 +67,10 @@ def status(name=None):
 def update():
     action = request.form['submit']
     rf = request.form
+
+    with open('trs.pickle', 'rb') as handle:
+                trs=  pickle.load(handle)
+                
     if action == "Delete":
         print "DELETE"
         print rf['triggerName']
@@ -91,14 +89,18 @@ def update():
         #trs[rf['name']] = request.form['name']
     
         trs[rf['triggerName']]['name'] = rf['triggerName']
-        trs[rf['triggerName']]['minTemp'] = rf['minTemp']
-        trs[rf['triggerName']]['maxTemp'] = rf['maxTemp']
-        trs[rf['triggerName']]['pct'] = rf['imgPercent']
-        trs[rf['triggerName']]['delayOn'] = rf['onDelay']
-        trs[rf['triggerName']]['delayOff'] = rf['offDelay']
-        trs[rf['triggerName']]['delayRepeat'] = rf['repeatDelay']
+        trs[rf['triggerName']]['minTemp'] = float(rf['minTemp'])
+        trs[rf['triggerName']]['maxTemp'] = float(rf['maxTemp'])
+        trs[rf['triggerName']]['pct'] = float(rf['imgPercent'])
+        trs[rf['triggerName']]['delayOn'] = float(rf['onDelay'])
+        trs[rf['triggerName']]['delayOff'] = float(rf['offDelay'])
+        trs[rf['triggerName']]['delayRepeat'] = float(rf['repeatDelay'])
+        trs[rf['triggerName']]['nOff']=0
+        trs[rf['triggerName']]['nOn']=0
+        trs[rf['triggerName']]['nRepeat']=0
 
-
+        with open('trs.pickle', 'wb') as handle:
+            pickle.dump(trs, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         
         #ff = open('triggers.csv','w')
@@ -115,25 +117,25 @@ def update():
         
     return redirect(url_for('triggers'))
         
-##def start_runner():
-##    def start_loop():
-##        not_started = True
-##        while not_started:
-##            print('In start loop')
-##            try:
-##                r = requests.get('http://127.0.0.1:5000/')
-##                if r.status_code == 200:
-##                    print('Server started, quiting start_loop')
-##                    not_started = False
-##                print(r.status_code)
-##            except:
-##                print('Server not yet started')
-##            time.sleep(2)
-##
-##    print('Started runner')
-##    thread = threading.Thread(target=start_loop)
-##    thread.start()
+def start_runner():
+    def start_loop():
+        not_started = True
+        while not_started:
+            print('In start loop')
+            try:
+                r = requests.get('http://127.0.0.1:5000/video_feed')
+                if r.status_code == 200:
+                    print('Server started, quitting start_loop')
+                    not_started = False
+                print(r.status_code)
+            except:
+                print('Server not yet started')
+            time.sleep(2)
+
+    print('Started runner')
+    thread = threading.Thread(target=start_loop)
+    thread.start()
 
 if __name__ == "__main__":
-##    start_runner()
+    start_runner()
     app.run(host='0.0.0.0', threaded=True)

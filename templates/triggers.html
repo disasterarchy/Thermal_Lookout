@@ -1,18 +1,7 @@
 <html>
-<script>
-window.onload = function() {
-    var image = document.getElementById("img");
-
-    function updateImage() {
-        image.src = image.src.split("?")[0] + "?" + new Date().getTime();
-    }
-
-    setInterval(updateImage, 1000);
-}
-</script>
 <body>
-<h1>Current Image</h1>
-<img id="img" src="/data/current.jpg">
+<h1>Thermal Lookout</h1>
+<img src="{{ url_for('video_feed') }}">
 <h1>Triggers</h1>
 <h4>Quick Add Triggers</h4>
 <table>

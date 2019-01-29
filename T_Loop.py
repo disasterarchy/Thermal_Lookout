@@ -70,6 +70,8 @@ def MainLoop ():
         
 def LoopActions (retImg=False):
             s1=datetime.now()
+            with open('trs.pickle', 'rb') as handle:
+                trs=  pickle.load(handle)
             mn, mx, rw = GetDataFast(False)
             print ktof(mx)
             tempsF, cdf = MakeHistogramFast(rw)
@@ -154,10 +156,10 @@ def CloudSync(mn, mx, im, k, ReturnURL):
         rout = requests.post(upload_url, data=data, files=files)
         return rout
 
-tcsv = open('triggers.csv','r')
-o = tcsv.readlines()
-tcsv.close()
-trs = UpdateTriggers(o, {})
+#tcsv = open('triggers.csv','r')
+#o = tcsv.readlines()
+#tcsv.close()
+#trs = UpdateTriggers(o, {})
 
 #t = {'minTempF':85, 'maxTempF':95}
 #mn, mx, rw, immm = GetData(False)
