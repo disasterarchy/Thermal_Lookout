@@ -1,0 +1,1 @@
+\home\pi\Thermal_Lookout\python app.py

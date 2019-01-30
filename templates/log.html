@@ -1,0 +1,62 @@
+<html>
+<head>
+<style type="text/css">
+/* ------------- CSS Popup Image ------------- */
+#thumbwrap {
+width:252px;
+height:252px;
+}
+.thumb {
+float:left; /* must be floated for same cross browser position of larger image */
+position:relative;
+margin:3px;
+}
+.thumb img {
+border:1px solid #000;
+vertical-align:bottom;
+}
+.thumb:hover {
+border:0; /* IE6 needs this to show large image */
+z-index:1;
+}
+.thumb span {
+position:absolute;
+visibility:hidden;
+}
+.thumb:hover span {
+visibility:visible;
+top:37px;
+left:37px;
+}
+</style> 
+</head>
+<body>
+<h1> Log </h1>
+<div id="thumbwrap">
+<table class = "table table-striped">
+<tr>
+<th>Date</th>
+<th>Trigger Name</th>
+<th>Max Temp</th>
+<th>Min Temp</th>
+<th>Thermal Image</th>
+<th>Visible Image</th>
+</tr>
+
+{% for line in lines %}
+	<tr>
+		<td> {{ line.split(',')[0]}} </td>
+		<td> {{ line.split(',')[1]}} </td>
+		<td> {{ line.split(',')[2]}} </td>
+		<td> {{ line.split(',')[3]}} </td>
+		<td><a class="thumb" href="#"><img src="/static/archive/thumb/{{ line.split(',')[4]}}" alt=""><span><img src="/static/archive/{{ line.split(',')[4]}}" alt="..."></span></a></td>
+		<td><a class="thumb" href="#"><img src="/static/archive/thumb/{{ line.split(',')[5]}}" alt=""><span><img src="/static/archive/{{ line.split(',')[5]}}" height="480" width=640 alt="..."><
+
+	</tr>
+{% endfor %}
+</table>
+</div>
+</body>
+</html>
+
+

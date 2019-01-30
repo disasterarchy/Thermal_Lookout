@@ -17,7 +17,6 @@ from datetime import datetime
 #from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 #from matplotlib.figure import Figure
 
-import time
 import io
 
 # import the necessary packages for Picamera
@@ -28,7 +27,7 @@ import time
 # initialize the camera and grab a reference to the raw camera capture
 camera = PiCamera()
 rawCapture = PiRGBArray(camera)
-camera.resolution=(256,192)
+camera.resolution=(1280,720)
 
 
 BUF_SIZE = 2
@@ -153,14 +152,18 @@ def GetData(bWrite=False):
     #cv2.imshow('Lepton Radiometry', img)
     if bWrite:
       cv2.imwrite("static/current.jpg",img)
+    time.sleep(0)  
     return minVal, maxVal, raw, img
 
 def GetDataFast(bWrite=False):
-    raw = q.get(True, 500)
-    if raw is None:
-                  print("data is none")
-    minVal = raw.min()
-    maxVal = raw.max()
+    minVal = 0
+    while minVal < 25000:
+      raw = q.get(True, 500)
+      if raw is None:
+                    print("data is none")
+      minVal = raw.min()
+      maxVal = raw.max()
+
     return minVal, maxVal, raw 
 
 def exit_handler():
@@ -194,31 +197,38 @@ def MakeHistogramFast(rw):
     return temps, cdf
 
 def MakeItPretty(rw, t, mn, mx):
-  lowerB = ftok(t['minTemp'])
-  upperB = ftok(t['maxTemp'])
+  if UnitsC:
+    lowerB = ctok(t['minTemp'])
+    upperB = ctok(t['maxTemp'])
+  else:
+    lowerB = ftok(t['minTemp'])
+    upperB = ftok(t['maxTemp'])
+  time.sleep(0)
   #rw = cv2.flip(rw,1)
   mask = cv2.inRange(rw,lowerB, upperB)
-  #cv2.imwrite('mask.jpg', mask)
   imask = cv2.bitwise_not(mask)
-  #cv2.imwrite('mask_inv.jpg', imask)
   img = raw_to_8bit(rw)
   img_bg = cv2.bitwise_and(img,img, mask=imask)
-  #cv2.imwrite('img_bg.jpg',img_bg)
   im_hot = cv2.applyColorMap(img, 2)
   im_hot_fg = cv2.bitwise_and(im_hot,im_hot,mask=mask)
-  #cv2.imwrite('im_hot.jpg',im_hot)
-  #cv2.imwrite('im_hot.jpg_fg',im_hot_fg)
   composite = cv2.add(im_hot_fg,img_bg)
   img2 = cv2.resize(composite[:,:], (640, 480))
   raw = cv2.resize(rw[:,:], (640, 480))
   minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(raw)
       #http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_colorspaces/py_colorspaces.html
       #https://docs.opencv.org/3.2.0/d0/d86/tutorial_py_image_arithmetics.html
-  img = cv2.copyMakeBorder(img2,top=30, bottom=100, left=30, right=30, borderType=0)
+  img = cv2.copyMakeBorder(img2,top=30, bottom=50, left=30, right=30, borderType=0)
   mnLoc = (minLoc[0]+0,minLoc[1]+0)
   mxLoc = (maxLoc[0]+0,maxLoc[1]+0)
-  display_temperature(img, mn, minLoc, (255, 60, 60))
-  display_temperature(img, mx, maxLoc, (140, 140, 255))
+  if mn < 27300:
+    print "PROBLEM"
+    np.savetxt('raw.csv',raw,delimiter=',')
+    print mn, mx
+    cv2.imwrite('prettybad.jpg',img)
+    cv2.imwrite('img2.jpg',img2)
+
+  display_temperature(img, mn, minLoc, (255, 200, 200))
+  display_temperature(img, mx, maxLoc, (0, 0, 140))
   color = (255,255,255)
   if t['nOn']>=1:
     TextInfo = t['name'] + ' ACTIVE'
@@ -226,9 +236,9 @@ def MakeItPretty(rw, t, mn, mx):
     TextInfo = ""
   cv2.putText(img, TextInfo, (10,10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
   if UnitsC:
-    TextInfo = '%.2f percent is in range %.0f F to %.0f F' % (t['pctInRange'], t['minTemp'], t['maxTemp'])
-  else:
     TextInfo = '%.2f percent is in range %.0f C to %.0f C' % (t['pctInRange'], t['minTemp'], t['maxTemp'])
+  else:
+    TextInfo = '%.2f percent is in range %.0f F to %.0f F' % (t['pctInRange'], t['minTemp'], t['maxTemp'])
   cv2.putText(img, TextInfo, (20,500), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
   TextInfo = datetime.now().__format__("%m-%d-%Y %H:%M:%S") 
   cv2.putText(img, TextInfo, (10,540), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
@@ -238,34 +248,29 @@ def MakeItPretty(rw, t, mn, mx):
 def MakeItPretty2(rw, t, mn, mx):
   rawCapture = PiRGBArray(camera)
   if UnitsC:
-    lowerB = ftok(t['minTemp'])
-    upperB = ftok(t['maxTemp'])
-  else:
     lowerB = ctok(t['minTemp'])
     upperB = ctok(t['maxTemp'])
-  #rw = cv2.flip(rw,1)
+  else:
+    lowerB = ftok(t['minTemp'])
+    upperB = ftok(t['maxTemp'])
   mask = cv2.inRange(rw,lowerB, upperB)
-  #cv2.imwrite('mask.jpg', mask)
   imask = cv2.bitwise_not(mask)
-  #cv2.imwrite('mask_inv.jpg', imask)
   img = raw_to_8bit(rw)
   img_bg = cv2.bitwise_and(img,img, mask=imask)
-  #cv2.imwrite('img_bg.jpg',img_bg)
   im_hot = cv2.applyColorMap(img, 2)
   im_hot_fg = cv2.bitwise_and(im_hot,im_hot,mask=mask)
-  #cv2.imwrite('im_hot.jpg',im_hot)
-  #cv2.imwrite('im_hot.jpg_fg',im_hot_fg)
   composite = cv2.add(im_hot_fg,img_bg)
-  img2 = cv2.resize(composite[:,:], (640, 480))
-  raw = cv2.resize(rw[:,:], (640, 480))
+  img2 = cv2.resize(composite[:,:], (480, 360))
+  raw = cv2.resize(rw[:,:], (480, 360))
+  time.sleep(0)
   minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(raw)
       #http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_colorspaces/py_colorspaces.html
       #https://docs.opencv.org/3.2.0/d0/d86/tutorial_py_image_arithmetics.html
-  img = cv2.copyMakeBorder(img2,top=0, bottom=210, left=0, right=0, borderType=0)
+  img = cv2.copyMakeBorder(img2,top=0, bottom=60, left=0, right=410, borderType=0)
   mnLoc = (minLoc[0]+0,minLoc[1]+0)
   mxLoc = (maxLoc[0]+0,maxLoc[1]+0)
-  display_temperature(img, mn, minLoc, (255, 0, 0))
-  display_temperature(img, mx, maxLoc, (140, 140, 255))
+  display_temperature(img, mn, minLoc, (255, 200, 200))
+  display_temperature(img, mx, maxLoc, (0, 0, 140))
   colorWHT = (255,255,255)
   if t['nOn']>=1:
     TextInfo = t['name'] + ' ACTIVE'
@@ -273,40 +278,45 @@ def MakeItPretty2(rw, t, mn, mx):
   else:
     TextInfo = "No active trigger"
     color = (255,255,255)
-  cv2.putText(img, TextInfo, (10,510), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
-  TextInfo = '%.2f'  % (t['pctInRange']) + ' % in range' 
-  cv2.putText(img, TextInfo, (10,535), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
+  cv2.putText(img, TextInfo, (10,380), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
+  #TextInfo = '%.2f'  % (t['pctInRange']) + ' % in range' 
+  #cv2.putText(img, TextInfo, (10,535), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
   if UnitsC:
-    TextInfo = '%.0f C to %.0f C' % ( t['minTemp'], t['maxTemp'])
+    TextInfo = '%.2f'  % (t['pctInRange']) + ' % in range ' +'%.0f C to %.0f C' % ( t['minTemp'], t['maxTemp'])
   else:
-    TextInfo = '%.0f F to %.0f F' % ( t['minTemp'], t['maxTemp'])
-  cv2.putText(img, TextInfo, (10,570), cv2.FONT_HERSHEY_SIMPLEX, 0.75, colorWHT, 2)
+    TextInfo = '%.2f'  % (t['pctInRange']) + ' % in range ' + '%.0f F to %.0f F' % ( t['minTemp'], t['maxTemp'])
+  cv2.putText(img, TextInfo, (10,400), cv2.FONT_HERSHEY_SIMPLEX, 0.75, colorWHT, 2)
   
   TextInfo = datetime.now().__format__("%m-%d-%Y %H:%M:%S") 
-  cv2.putText(img, TextInfo, (10,610), cv2.FONT_HERSHEY_SIMPLEX, 0.75, colorWHT, 2)
+  cv2.putText(img, TextInfo, (490,330), cv2.FONT_HERSHEY_SIMPLEX, 0.75, colorWHT, 2)
 #  cv2.imwrite('pretty.jpg',img)
   camera.capture(rawCapture, format="bgr")
   image = rawCapture.array
-  small = cv2.resize(image, (256,192))
-  x=495
-  y=350
+  small = cv2.resize(image, (410,308))
+  x=0
+  y=480
   img[x:x+small.shape[0], y:y+small.shape[1]]=small
   return img
   
-def MakeSavedImage(img):
-  # grab an image from the camera
-  rawCapture = PiRGBArray(camera)
- 
-  # allow the camera to warmup
-  time.sleep(0.1)
-  camera.capture(rawCapture, format="bgr")
-  image = rawCapture.array
-
+def MakeSavedImage(img, Big):
+  image = cv2.resize(Big, (1280,720))
   imageBig = cv2.copyMakeBorder(image, top=0, bottom = 0, left = 700, right = 0, borderType=0)
   x = 60
   y = 0
   imageBig[x:x+img.shape[0], y:y+img.shape[1]]=img
   return imageBig
+
+def GetPiCameraImage():
+  # grab an image from the camera
+  rawCapture = PiRGBArray(camera)
+ 
+  # allow the camera to warmup
+  time.sleep(0.05)
+  camera.capture(rawCapture, format="bgr")
+  imageBig = rawCapture.array
+  imageSmall = cv2.resize(imageBig, (160,120))
+  
+  return imageBig, imageSmall
 
 
 def HistLoop(tT,tPct):

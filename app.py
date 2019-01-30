@@ -1,7 +1,4 @@
 from config import UnitsC, f_triggers
-import requests
-import threading
-import time
 from T_Loop import *
 from flask import Flask
 from flask import render_template, Response, request, redirect, url_for
@@ -40,7 +37,6 @@ def video_feed():
 
 @app.route('/data/current.jpg')
 def CurrentImage():
-        imm = cv2.imread("test.jpg")
         mn, mx, rw, imm = GetData()
         buf = cv2.imencode(".jpg",imm)
         resp = Flask.make_response(app, buf[1].tostring())
@@ -49,10 +45,18 @@ def CurrentImage():
 
 @app.route('/triggers')
 def triggers():
-    with open('trs.pickle', 'rb') as handle:
-        trs=  pickle.load(handle)
+
     return render_template('triggers.html', triggers=trs.values(), url='me')
 
+@app.route('/log')
+def log():
+    try:
+        ff = open('static/archive/log.csv')
+        lines = ff.readlines()
+        ff.close()
+    except:
+        return "Couldn't open log!"
+    return render_template('log.html', lines=lines[::-1])
 
 @app.route('/trgs')
 def trgs():
@@ -68,14 +72,16 @@ def update():
     action = request.form['submit']
     rf = request.form
 
-    with open('trs.pickle', 'rb') as handle:
-                trs=  pickle.load(handle)
+    #with open('trs.pickle', 'rb') as handle:
+    #            trs=  pickle.load(handle)
                 
     if action == "Delete":
         print "DELETE"
         print rf['triggerName']
-        del trs[rf['triggerName']]
-        #TODO add delete code
+        try:
+            del trs[rf['triggerName']]
+        except:
+            print "already deleted!"
       
     #if action == "Save":
     #    trs[rf['name']]['name'] = rf['name']

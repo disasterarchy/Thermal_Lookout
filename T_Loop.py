@@ -5,6 +5,7 @@ import numpy as np
 import json
 import urllib2
 import requests
+import threading
 from base_camera import BaseCamera
 
 
@@ -61,19 +62,42 @@ def UpdateTriggers(out, triggers):
                     d['nOff']=0
                     d['nRepeat']=9.999E+9
                 newtriggers[n] = d
-                #print d['name']
     return newtriggers
-   
+
+def SaveImages(rw, t, mn, mx,Big,Small):
+        
+        img = MakeItPretty(rw, t, mn, mx)
+        BigImg = MakeSavedImage(img, Big)
+        o = CloudSync(ktof(mn), ktof(mx), BigImg, None, True)
+        url = img_url + o.text
+        Triggered(t, PctInRange*100, url, ktof(mx), True)
+        s = datetime.now()
+        ff = open('static/archive/log.csv','a')
+        nowstr = datetime.now().strftime("%m_%d_%y-%H:%M:%S")
+        fnameT = 'thermal_'+ nowstr + '.jpg'
+        fnameV = 'visible_'+ nowstr + '.jpg'
+        if UnitsC:
+            ff.write( nowstr + ',' + t['name'] + ',' + str(ktoc(mx)) + ',' + str(ktof(mn)) + ',' + fnameT + ',' +fnameV+"\n")
+        else:
+            ff.write( nowstr + ',' + t['name'] + ',' + str(ktof(mx))+ ',' + str(ktof(mn)) + ',' + fnameT + ',' +fnameV + "\n")
+        ff.close()
+        cv2.imwrite("static/archive/" + fnameV,Big)
+        cv2.imwrite("static/archive/thumb/" + fnameV,Small)
+        cv2.imwrite("static/archive/" + fnameT,img)
+        tSmall = cv2.resize(img, (160,120))
+        cv2.imwrite("static/archive/thumb/" + fnameT,tSmall)
+        
+
 def MainLoop ():
     while True:
         LoopActions
         
 def LoopActions (retImg=False):
             s1=datetime.now()
-            with open('trs.pickle', 'rb') as handle:
-                trs=  pickle.load(handle)
+            
+            time.sleep(0)
             mn, mx, rw = GetDataFast(False)
-            print ktof(mx)
+            time.sleep(0)
             tempsF, cdf = MakeHistogramFast(rw)
             tval=0
             activet=''
@@ -87,21 +111,15 @@ def LoopActions (retImg=False):
                     #temperatures are in Range
                     t['nOn']+=1
                     t['nOff']=0
-                    if t['nOn'] == t['delayOn']:
+                    if t['nOn'] >= t['delayOn']:
                         #Delay condition is met 
                         if t['nRepeat'] > t['delayRepeat']:
                         #Sufficient time has passed since last trigger
-                            img = MakeItPretty(rw, t, mn, mx)
-                            s = datetime.now()
-                            BigImg = MakeSavedImage(img)
-                            cv2.imwrite("static\BigImage.jpg",BigImg)
-                            #o = CloudSync(ktof(mn), ktof(mx), BigImg, None, True)
-                            print "Big Image: ", datetime.now()-s
-                            
-                            url = img_url + "BigImage.jpg"
-                            Triggered(t, PctInRange*100, url, ktof(mx), True)
+                            Big, Small = GetPiCameraImage()
+                            thread = threading.Thread(target=SaveImages, args=[rw,t,mn,mx, Big, Small])
+                            thread.start()
                             t['nRepeat']=0
-                            print "TRIGGER ",t['name'], PctInRange*100, "% is in range exceeds ", t['minTemp'], ' - ', t['maxTempF']
+                            print "TRIGGER ",t['name'], PctInRange*100, "% is in range exceeds ", t['minTemp'], ' - ', t['maxTemp']
                 else:
                     #Temperatures not in Range
                     #print(PctInRange*100, "% in range ", t['minTempF'], '-', t['maxTempF'])
@@ -119,7 +137,7 @@ def LoopActions (retImg=False):
             except:
                 t= {'minTemp':0, 'maxTemp':800, 'pctInRange':100, 'nOn':0}
             s2=datetime.now()
-            img = MakeItPretty2(rw, t, mn, mx)
+            img = MakeItPretty(rw, t, mn, mx)
             #try:
             #    q2.put(im,True,0.5)
             #except:
@@ -131,7 +149,7 @@ def LoopActions (retImg=False):
             td2=s3-s2
             td3=s4-s3
             tdd = s4-s1
-            print 1.0/tdd.total_seconds()
+            #print 1.0/tdd.total_seconds()
             #print(td1.total_seconds(),td2.total_seconds(),td3.total_seconds())   
             if retImg:
                 return img
@@ -155,6 +173,9 @@ def CloudSync(mn, mx, im, k, ReturnURL):
         data = {'minTempF':mn, 'maxTempF': mx, 'key': k, 'ReturnURL': ReturnURL}
         rout = requests.post(upload_url, data=data, files=files)
         return rout
+
+with open('trs.pickle', 'rb') as handle:
+    trs=  pickle.load(handle)
 
 #tcsv = open('triggers.csv','r')
 #o = tcsv.readlines()
