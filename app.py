@@ -30,7 +30,7 @@ def gen(camera):
 
 @app.route('/video_feed')
 def video_feed():
-    """Video streaming route. Put this in the src attribute of an img tag."""
+    """Video streaming route."""
     return Response(gen(Camera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
@@ -103,7 +103,7 @@ def update():
         trs[rf['triggerName']]['delayRepeat'] = float(rf['repeatDelay'])
         trs[rf['triggerName']]['nOff']=0
         trs[rf['triggerName']]['nOn']=0
-        trs[rf['triggerName']]['nRepeat']=0
+        trs[rf['triggerName']]['nRepeat']=9E+9
 
         with open('trs.pickle', 'wb') as handle:
             pickle.dump(trs, handle, protocol=pickle.HIGHEST_PROTOCOL)

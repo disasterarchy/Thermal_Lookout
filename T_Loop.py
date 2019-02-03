@@ -27,8 +27,12 @@ def Triggered(trigger, PctExceeded, url, mx, bVal):
     #response = urllib2.urlopen(req, json.dumps(data))
     #headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}    
     #data = json.dumps(data)
-    rout = requests.post(my_url, data=data)
-    print(rout.text)
+    try:
+        rout = requests.post(my_url, data=data)
+        print(rout.text)
+    except:
+        print "Could not contact IFTTT cloud"
+    
     
 def UpdateTriggers(out, triggers):
     newtriggers={}
@@ -64,12 +68,12 @@ def UpdateTriggers(out, triggers):
                 newtriggers[n] = d
     return newtriggers
 
-def SaveImages(rw, t, mn, mx,Big,Small):
-        
+def SaveImages(rw, t, mn, mx,Big,Small, PctInRange):
+        time.sleep(0)
         img = MakeItPretty(rw, t, mn, mx)
         BigImg = MakeSavedImage(img, Big)
         o = CloudSync(ktof(mn), ktof(mx), BigImg, None, True)
-        url = img_url + o.text
+        url = img_url + o
         Triggered(t, PctInRange*100, url, ktof(mx), True)
         s = datetime.now()
         ff = open('static/archive/log.csv','a')
@@ -81,6 +85,7 @@ def SaveImages(rw, t, mn, mx,Big,Small):
         else:
             ff.write( nowstr + ',' + t['name'] + ',' + str(ktof(mx))+ ',' + str(ktof(mn)) + ',' + fnameT + ',' +fnameV + "\n")
         ff.close()
+        time.sleep(0)
         cv2.imwrite("static/archive/" + fnameV,Big)
         cv2.imwrite("static/archive/thumb/" + fnameV,Small)
         cv2.imwrite("static/archive/" + fnameT,img)
@@ -93,6 +98,7 @@ def MainLoop ():
         LoopActions
         
 def LoopActions (retImg=False):
+    try:
             s1=datetime.now()
             
             time.sleep(0)
@@ -111,12 +117,13 @@ def LoopActions (retImg=False):
                     #temperatures are in Range
                     t['nOn']+=1
                     t['nOff']=0
+                    print t['nOn'], t['nRepeat']
                     if t['nOn'] >= t['delayOn']:
                         #Delay condition is met 
                         if t['nRepeat'] > t['delayRepeat']:
                         #Sufficient time has passed since last trigger
                             Big, Small = GetPiCameraImage()
-                            thread = threading.Thread(target=SaveImages, args=[rw,t,mn,mx, Big, Small])
+                            thread = threading.Thread(target=SaveImages, args=[rw,t,mn,mx, Big, Small, PctInRange])
                             thread.start()
                             t['nRepeat']=0
                             print "TRIGGER ",t['name'], PctInRange*100, "% is in range exceeds ", t['minTemp'], ' - ', t['maxTemp']
@@ -153,8 +160,8 @@ def LoopActions (retImg=False):
             #print(td1.total_seconds(),td2.total_seconds(),td3.total_seconds())   
             if retImg:
                 return img
-        #except:
-            #print('error')
+    except:
+            print('error')
 
 class Camera(BaseCamera):
 
@@ -168,11 +175,15 @@ class Camera(BaseCamera):
             yield cv2.imencode('.jpg', img)[1].tobytes()
      
 def CloudSync(mn, mx, im, k, ReturnURL):
-        img = cv2.imencode(".jpg",im)[1].tostring()
-        files = {'img':img}
-        data = {'minTempF':mn, 'maxTempF': mx, 'key': k, 'ReturnURL': ReturnURL}
-        rout = requests.post(upload_url, data=data, files=files)
-        return rout
+        try:
+            img = cv2.imencode(".jpg",im)[1].tostring()
+            files = {'img':img}
+            data = {'minTempF':mn, 'maxTempF': mx, 'key': k, 'ReturnURL': ReturnURL}
+            rout = requests.post(upload_url, data=data, files=files)
+            return rout.text
+        except:
+            print "Could not sync to Thermal_lookout cloud"
+            return "CloudNotAvaliable"
 
 with open('trs.pickle', 'rb') as handle:
     trs=  pickle.load(handle)

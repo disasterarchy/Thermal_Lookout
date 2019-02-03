@@ -217,7 +217,7 @@ def MakeItPretty(rw, t, mn, mx):
   minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(raw)
       #http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_colorspaces/py_colorspaces.html
       #https://docs.opencv.org/3.2.0/d0/d86/tutorial_py_image_arithmetics.html
-  img = cv2.copyMakeBorder(img2,top=30, bottom=50, left=30, right=30, borderType=0)
+  img = cv2.copyMakeBorder(img2,top=0, bottom=80, left=0, right=30, borderType=0)
   mnLoc = (minLoc[0]+0,minLoc[1]+0)
   mxLoc = (maxLoc[0]+0,maxLoc[1]+0)
   if mn < 27300:
@@ -234,7 +234,7 @@ def MakeItPretty(rw, t, mn, mx):
     TextInfo = t['name'] + ' ACTIVE'
   else:
     TextInfo = ""
-  cv2.putText(img, TextInfo, (10,10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
+  cv2.putText(img, TextInfo, (15,15), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
   if UnitsC:
     TextInfo = '%.2f percent is in range %.0f C to %.0f C' % (t['pctInRange'], t['minTemp'], t['maxTemp'])
   else:
