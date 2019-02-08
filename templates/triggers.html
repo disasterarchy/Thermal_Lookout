@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A layout example with a side menu that hides on mobile, just like the Pure website.">
-    <title>About Thermal Lookout</title>
+    <meta name="description" content="Triggers">
+    <title>Triggers - Thermal Lookout</title>
     
     <link rel="stylesheet" href="/static/css/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
     
@@ -39,14 +39,14 @@
             <a class="pure-menu-heading" href="#">Thermal Lookout</a>
 
             <ul class="pure-menu-list">
-                <li class="pure-menu-item menu-item-divided pure-menu-selected"><a href="/static/About" class="pure-menu-link">About</a></li>
+                <li class="pure-menu-item"><a href="/static/about.html" class="pure-menu-link">About</a></li>
                 <li class="pure-menu-item"><a href="/static/video_feed.html" class="pure-menu-link">Live Thermal Video</a></li>
                 <li class="pure-menu-item"><a href="/static/lvideo_feed.html" class="pure-menu-link">Live Video</a></li>
-                <li class="pure-menu-item"><a href="/triggers" class="pure-menu-link">Triggers</a></li>
+                <li class="pure-menu-item menu-item-divided pure-menu-selected"><a href="/triggers" class="pure-menu-link">Triggers</a></li>
                 <li class="pure-menu-item"><a href="/log" class="pure-menu-link">Log</a></li>
-                </li>
 
                 <li class="pure-menu-item"><a href="/static/contact.html" class="pure-menu-link">Contact</a></li>
+				<li class="pure-menu-item"><a href="/control" class="pure-menu-link">Settings</a></li>
             </ul>
         </div>
     </div>
@@ -59,10 +59,7 @@
 
         <div class="content">
 
-
-<h1>Triggers</h1>
 <h2 class="content-subhead">Quick Add Triggers</h2>
-<h4>Quick Add Triggers</h4>
 <table class="pure-table-horizontal">
 <tbody>
 <tr>
@@ -73,7 +70,7 @@
  <input name="minTemp" type="hidden" value="150" /> 
  <input name="maxTemp"  type="hidden" value ="450"   /> 
  <input name="imgPercent"  type="hidden" value="0.05"/> 
- <input name="onDelay" type="hidden"   value="3" /> 
+ <input name="onDelay" type="hidden"   value="2" /> 
  <input name="offDelay" type="hidden"  value="40"  /> 
  <input name="repeatDelay" type="hidden" value="3600"/> 
  <input type="submit" name="submit" value="New Fire Trigger"></form></td>
@@ -83,16 +80,16 @@
  <input name="triggerName" type="hidden" value="person_detected"/> 
  <input name="minTemp" type="hidden" value="28" /> 
  <input name="maxTemp"  type="hidden" value ="35"   /> 
- <input name="imgPercent"  type="hidden" value="0.05"/> 
- <input name="onDelay" type="hidden"   value="1" /> 
+ <input name="imgPercent"  type="hidden" value="0.50"> 
+ <input name="onDelay" type="hidden"   value="3" /> 
  <input name="offDelay" type="hidden"  value="10"  /> 
- <input name="repeatDelay" type="hidden" value="60"/> 
+ <input name="repeatDelay" type="hidden" value="5000"/> 
  <input type="submit" name="submit" value="Body Heat Trigger"></form></td>
 </tr>
 </tbody>
 </table>
-<h4>My Triggers</h4>
-<table>
+<h2 class="content-subhead">My Triggers</h2>
+<table class="pure-table-horizontal">
 <thead>
 <tr>
 <td>
@@ -126,6 +123,7 @@ Delay
 <td>
 
 </td>
+<td> </td>
 </tr>
 </thead>
 <tbody>
@@ -142,7 +140,8 @@ Delay
 <td><input name="onDelay" type="number" min="0" max="100" step="1" value="{{trigger['delayOn']}}"/></td>
 <td><input name="offDelay" type="number" min="0" max="100" step="1" value="{{trigger['delayOff']}}" /></td>
 <td><input name="repeatDelay" type="number" min="0"  step="1" value="{{trigger['delayRepeat']}}" size="3"/></td>
-<td><input name = "key" type="hidden" value = {{trigger['key']}}><input type="submit" name ="submit" value="Save"><input type="submit" name="submit" value="Delete"></form></td>             
+<td><input name = "key" type="hidden" value = {{trigger['key']}}><input type="submit" name ="submit" value="Save"></td>
+<td><input type="submit" name="submit" value="Delete"></form></td>             
 </tr>
 {% endfor %}
 <tr>

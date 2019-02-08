@@ -2,6 +2,9 @@ from config import UnitsC, f_triggers
 from T_Loop import *
 from flask import Flask
 from flask import render_template, Response, request, redirect, url_for
+from subprocess import call
+# Raspberry Pi camera module (requires picamera package)
+#from camera_pi import pCamera
 
 #from camera_pi import Camera
 
@@ -34,6 +37,12 @@ def video_feed():
     return Response(gen(Camera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.route('/vvideo_feed')
+def vvideo_feed():
+    """Video streaming route."""
+    return Response(gen(pCamera()),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
 
 @app.route('/data/current.jpg')
 def CurrentImage():
@@ -56,11 +65,11 @@ def log():
         ff.close()
     except:
         return "Couldn't open log!"
-    return render_template('log.html', lines=lines[::-1])
+    return render_template('log.html', lines=lines[:-15:-1])
 
-@app.route('/trgs')
-def trgs():
-    return render_template('triggers.html', triggers=trs.values(), url='me')
+@app.route('/control')
+def control():
+    return render_template('control.html', url=web_url)
 
 
 @app.route('/status')
@@ -122,7 +131,40 @@ def update():
         
         
     return redirect(url_for('triggers'))
-        
+
+@app.route('/ctrl', methods=['POST','GET'])
+def ctrl():
+    print 'Entered ctrl'
+    rf = request.form
+    print rf
+    
+    action = rf['submit']
+    
+    print rf['password']
+    if rf['password'] == 'qwerty':
+                
+        if action == "Shutdown":
+            print 'Shutting down'
+            call("sudo shutdown -h now", shell=True)
+            return "Restarting now..."
+        if action == "Restart":
+            call("sudo shutdown -r now", shell=True)
+            return "Shutting down..."
+
+        if action == "Delete Logs":
+            call("sudo ./delete_logs.sh", shell=True)
+            return "Deleting logs..."
+
+        if action == "Submit":
+            try:
+                fff = open('web_url.txt','w')
+                fff.write(rf['url'])
+                fff.close()
+                return "Updated IFTTT URL.  Restart for changes to take effect"
+            except:
+                return "Error updating url!"
+    return "No action completed."
+       
 def start_runner():
     def start_loop():
         not_started = True

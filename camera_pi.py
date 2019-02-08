@@ -1,14 +1,15 @@
 import io
 import time
 import picamera
-from base_camera import BaseCamera
+from bc import PiBaseCamera
 
 
-class Camera(BaseCamera):
+class pCamera(PiBaseCamera):
     @staticmethod
     def frames():
         with picamera.PiCamera() as camera:
             # let camera warm up
+            camera.resolution=(1280,720)
             time.sleep(2)
 
             stream = io.BytesIO()

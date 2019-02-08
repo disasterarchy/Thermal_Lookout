@@ -1,10 +1,11 @@
-<!doctype html>
-<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Triggers">
-    <title>Triggers - Thermal Lookout</title>
+    <title>Logs - Thermal Lookout</title>
+    
+    <link rel="stylesheet" href="/static/css/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+    
     <style type="text/css">
 /* ------------- CSS Popup Image ------------- */
 #thumbwrap {
@@ -33,10 +34,7 @@ visibility:visible;
 top:37px;
 left:37px;
 }
-</style>
-    <link rel="stylesheet" href="/static/css/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
-    
-    
+</style> 
     
         <!--[if lte IE 8]>
             <link rel="stylesheet" href="/combo/1.18.13?/css/layouts/side-menu-old-ie.css">
@@ -74,7 +72,6 @@ left:37px;
                 <li class="pure-menu-item menu-item-divided pure-menu-selected"><a href="/log" class="pure-menu-link">Log</a></li>
 
                 <li class="pure-menu-item"><a href="/static/contact.html" class="pure-menu-link">Contact</a></li>
-				<li class="pure-menu-item"><a href="/control" class="pure-menu-link">Settings</a></li>
             </ul>
         </div>
     </div>
@@ -86,9 +83,8 @@ left:37px;
         </div>
 
         <div class="content">
-
-
-<table class="pure-table-horizontal">
+<div id="thumbwrap">
+<table class = "table table-striped">
 <tr>
 <th>Date</th>
 <th>Trigger Name</th>
@@ -109,8 +105,9 @@ left:37px;
 
 	</tr>
 {% endfor %}
-</tbody>
 </table>
-<script src="/static/css/ui.js"></script>
+</div>
 </body>
 </html>
+
+

@@ -5,7 +5,13 @@ UnitsC = True
 f_triggers = open('triggers.csv','r')
 
 # URL for IFTTT Maker webhooks
-web_url = 'https://maker.ifttt.com/trigger/{event}/with/key/cxREu7pLkejEkwtCRKMfiA'
+#web_url = 'https://maker.ifttt.com/trigger/{event}/with/key/cxREu7pLkejEkwtCRKMfiA'
+try:
+    fff = open('web_url.txt','r')
+    web_url =  fff.readlines()[0]
+    fff.close()
+except:
+    web_url = 'https://maker.ifttt.com/trigger/{event}/with/key/cxREu7pLkejEkwtCRKMfiA'
 
 # URL for cloud upload
 upload_url = 'https://thermal-lookout.appspot.com/upload'
